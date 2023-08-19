@@ -1,0 +1,58 @@
+{
+  "comment": "A sample hardware configuration, which is 100% made up.",
+  "max-stages": 32,
+  "max-rules-per-stage": 16,
+  "data stores": [
+    {
+      "name": "r1",
+      "width": 16,
+      "read": true,
+      "write": true,
+      "persistent": false,
+      "masked-writes": false
+    },
+
+    {
+      "name": "r2",
+      "width": 16,
+      "read": true,
+      "write": true,
+      "persistent": false,
+      "masked-writes": false
+    },
+
+    {
+      "name": "metadata",
+      "width": 64,
+      "read": true,
+      "write": false,
+      "persistent": false,
+      "masked-writes": false
+    },
+
+    {
+      "name": "state",
+      "width": 64,
+      "read": false,
+      "write": true,
+      "persistent": true,
+      "masked-writes": false
+    },
+
+    {
+      "name": "flags",
+      "width": 8,
+      "read": true,
+      "write": true,
+      "persistent": true,
+      "masked-writes": true
+    }
+  ],
+  "keys": ["r1[0:15]", "state[0:31]"],
+  "copy-range": 127,
+  "extract-range": 127,
+  "move-increment": 8,
+  "max-simultaneous-extracts": 2,
+  "max-simultaneous-copies": 4,
+  "max-simultaneous-actions": 4
+}

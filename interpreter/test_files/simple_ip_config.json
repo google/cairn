@@ -1,0 +1,31 @@
+{
+  "comment": "A sample hardware configuration, which is 100% made up.",
+  "max-stages": 32,
+  "max-rules-per-stage": 16,
+  "data stores": [
+    {
+      "name": "r1",
+      "width": 32,
+      "read": true,
+      "write": true,
+      "persistent": false,
+      "masked-writes": false
+    },
+
+    {
+      "name": "state",
+      "width": 32,
+      "read": false,
+      "write": true,
+      "persistent": true,
+      "masked-writes": false
+    }
+  ],
+  "keys": ["state[0:31]", "r1[0:31]"],
+  "copy-range": 127,
+  "extract-range": 127,
+  "move-increment": 8,
+  "max-simultaneous-extracts": 2,
+  "max-simultaneous-copies": 4,
+  "max-simultaneous-actions": 4
+}

@@ -1,0 +1,25 @@
+[
+  [
+    {
+      "comment": "This IR program is hand-coded for unit testing purposes.",
+      "table": 0,
+      "rule": 0,
+      "patterns": ["0b1**0", "0b0000"],
+      "actions": [
+        { "type": "CopyData", "src": "packet[0:3]", "dst": "state[0:3]" },
+        { "type": "MoveCursor", "numbits": "32" }
+      ]
+    },
+
+    {
+      "table": 0,
+      "rule": 1,
+      "patterns": ["0b00**", "0b110*"],
+      "actions": [
+        { "type": "ExtractHeader", "id": "hdr", "loc": "packet[0:15]" },
+        { "type": "CopyData", "src": "packet[4:7]", "dst": "state[0:3]" },
+        { "type": "MoveCursor", "numbits": "16" }
+      ]
+    }
+  ]
+]

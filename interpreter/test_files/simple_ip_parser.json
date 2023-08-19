@@ -1,0 +1,68 @@
+[
+  [
+    {
+      "comment": "This IR is hand-coded to implement the 'Simple P4 Parser' example.",
+      "table": 0,
+      "rule": 0,
+      "patterns": ["0x********", "0x********"],
+      "actions": [
+        {
+          "type": "ExtractHeader",
+          "id": "hdr.ethernet",
+          "loc": "packet[0:111]"
+        },
+        { "type": "CopyData", "src": "packet[96:111]", "dst": "r1[0:15]" },
+        { "type": "CopyData", "src": "1w32", "dst": "state[0:31]" },
+        { "type": "MoveCursor", "numbits": "112" }
+      ]
+    }
+  ],
+
+  [
+    {
+      "table": 1,
+      "rule": 0,
+      "patterns": ["0x00000001", "0x0800****"],
+      "actions": [
+        { "type": "ExtractHeader", "id": "hdr.ipv4", "loc": "packet[0:159]" },
+        { "type": "CopyData", "src": "packet[96:127]", "dst": "r1[0:31]" },
+        { "type": "CopyData", "src": "2w32", "dst": "state[0:31]" },
+        { "type": "MoveCursor", "numbits": "160" }
+      ]
+    },
+
+    {
+      "table": 1,
+      "rule": 1,
+      "patterns": ["0x00000001", "0x86DD****"],
+      "actions": [
+        { "type": "ExtractHeader", "id": "hdr.ipv6", "loc": "packet[0:319]" },
+        { "type": "CopyData", "src": "3w32", "dst": "state[0:31]" },
+        { "type": "MoveCursor", "numbits": "320" }
+      ]
+    }
+  ],
+
+  [
+    {
+      "table": 2,
+      "rule": 0,
+      "patterns": ["0x00000002", "0x7f0000**"],
+      "actions": [{ "type": "CopyData", "src": "100w32", "dst": "state[0:31]" }]
+    },
+
+    {
+      "table": 2,
+      "rule": 1,
+      "patterns": ["0x00000002", "0x********"],
+      "actions": [{ "type": "CopyData", "src": "99w32", "dst": "state[0:31]" }]
+    },
+
+    {
+      "table": 2,
+      "rule": 2,
+      "patterns": ["0x00000003", "0x********"],
+      "actions": [{ "type": "CopyData", "src": "99w32", "dst": "state[0:31]" }]
+    }
+  ]
+]
