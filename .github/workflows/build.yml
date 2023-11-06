@@ -1,0 +1,36 @@
+# Reference
+# - https://github.com/fruffy/p4dummy/blob/master/.github/workflows/build.yaml
+# - https://github.com/p4lang/p4c/blob/main/.github/workflows/ci-static-build-test.yml
+
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Cancel any preceding run on the pull request.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout repo
+      # https://github.com/actions/checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Configure ccache
+      # https://github.com/hendrikmuhs/ccache-action
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ runner.os }}
+        max-size: 1000M
+    - name: Build p4c with CAIRN backend
+      run: |
+        ./tools/install-dependencies-ubuntu.sh
+        ./tools/build.sh
