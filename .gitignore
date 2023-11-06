@@ -1,2 +1,4 @@
 bazel-*
 __pycache__
+
+/scratch
