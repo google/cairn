@@ -18,7 +18,7 @@ set -e  # Exit on error
 set -x  # Make command execution verbose
 
 THIS_DIR=$( cd -- "$( dirname -- "${0}" )" &> /dev/null && pwd )
-P4C_DIR=$(readlink -f ${THIS_DIR}/../p4c)
+CAIRN_DIR=$(readlink -f ${THIS_DIR}/..)
 
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
@@ -40,8 +40,6 @@ sudo apt-get install -y --no-install-recommends \
   python-is-python3 \
   python3 \
   python3-pip \
-  python3-setuptools \
   tcpdump
 
-sudo pip3 install --upgrade pip
-sudo pip3 install -r ${P4C_DIR}/requirements.txt
+sudo pip3 install --require-hashes -r ${CAIRN_DIR}/requirements.txt
