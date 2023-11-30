@@ -35,8 +35,9 @@ CMAKE_FLAGS+="-DENABLE_P4TEST=ON "
 CMAKE_FLAGS+="-DENABLE_P4C_GRAPHS=ON "
 
 # Link CAIRN compiler backend into p4c extensions directory
+rm -rf ${P4C_DIR}/extensions
 mkdir -p ${P4C_DIR}/extensions
-ln -s -f ${CAIRN_DIR}/compiler ${P4C_DIR}/extensions/cairn
+ln -s -T ${CAIRN_DIR}/compiler ${P4C_DIR}/extensions/cairn
 
 # Build and install
 mkdir -p ${P4C_DIR}/build
