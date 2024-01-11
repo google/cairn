@@ -314,9 +314,9 @@ for all later statements, but not earlier ones. See below for an example:
 
 ```
 state foo {
-  packet.extract(hdr1, x); // x is an 8-bit global. This uses the original value of x
-  x = packet.lookahead(bit<8>);
-  packet.extract(hdr2, x); // This uses the new value of x
+  packet.extract(hdr1, (bit<32>)x); // x is an 8-bit global. This uses the original value of x. We need to cast it to bit<32> and put it as one parameter for extract(...).
+  x = packet.lookahead<bit<8>>();
+  packet.extract(hdr2, (bit<32>)x); // This uses the new value of x
   transition accept;
 }
 ```
@@ -326,16 +326,22 @@ them see the same value for global variables. A naive solution is to inline the
 new definition of `x` in the above code, so only the original value remains.
 However, inlining potentially changes the order of statements; since some
 statements (specifically, `extract`s) have side effects, inlining is unsound
-until they are eliminated. Instead, we augment each global variable assignment
-with an equivalent local variable declaration, and replace later uses of that
+until they are eliminated. Instead, we replace each global variable assignment
+by an equivalent local variable declaration, and also replace later uses of that
 global with the equivalent local. This way, we can syntactically distinguish
 between the global’s original value and its updated value (the local). The local
-will then be inlined by a later pass, when it is safe to do so. When applied to
-the above example, the transformation would produce the following: `state foo {
-packet.extract(hdr1, x); // x is an 8-bit global. This uses the original value
-of x x = packet.lookahead(bit<8>); x_new = packet.lookahead(bit<8>); // This
-will get inlined later, so no overhead packet.extract(hdr2, x_new); // This uses
-the new value of x transition accept; }`
+will then be inlined by a later pass, when it is safe to do so. Finally, we will update the global variable to the value stored in newly added local variable to guarantee the correctness of its final value.
+When applied to
+the above example, the transformation would produce the following: 
+```
+state foo {
+  packet.extract(hdr1, (bit<32>)x); // x is an 8-bit global. This uses the original value of x. We need to cast it to bit<32> and put it as one parameter for extract(...).
+  x_new = packet.lookahead<bit<8>>(); // This will get inlined later, so no overhead 
+  packet.extract(hdr2, (bit<32>)x_new); // This uses the new value of x 
+  x = x_new; // This will update back the global variable
+  transition accept; 
+}
+```
 
 #### Pass 2: Extract and Lookahead Conversion
 
