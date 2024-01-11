@@ -314,9 +314,9 @@ for all later statements, but not earlier ones. See below for an example:
 
 ```
 state foo {
-  packet.extract(hdr1, x); // x is an 8-bit global. This uses the original value of x
-  x = packet.lookahead(bit<8>);
-  packet.extract(hdr2, x); // This uses the new value of x
+  packet.extract(hdr1, (bit<32>)x); // x is an 8-bit global. This uses the original value of x. We need to cast it to bit<32> and put it as one parameter for extract(...).
+  x = packet.lookahead<bit<8>>();
+  packet.extract(hdr2, (bit<32>)x); // This uses the new value of x
   transition accept;
 }
 ```
@@ -335,9 +335,9 @@ When applied to
 the above example, the transformation would produce the following: 
 ```
 state foo {
-  packet.extract(hdr1, x); // x is an 8-bit global. This uses the original value of x 
-  x_new = packet.lookahead(bit<8>); // This will get inlined later, so no overhead 
-  packet.extract(hdr2, x_new); // This uses the new value of x 
+  packet.extract(hdr1, (bit<32>)x); // x is an 8-bit global. This uses the original value of x. We need to cast it to bit<32> and put it as one parameter for extract(...).
+  x_new = packet.lookahead<bit<8>>(); // This will get inlined later, so no overhead 
+  packet.extract(hdr2, (bit<32>)x_new); // This uses the new value of x 
   x = x_new; // This will update back the global variable
   transition accept; 
 }
