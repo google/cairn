@@ -20,6 +20,7 @@
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "frontends/p4/typeMap.h"
 #include "ir/pass_manager.h"
+#include "GlobalVariableReplacement.h"
 
 namespace cairn {
 
@@ -35,7 +36,7 @@ class MidEnd : public PassManager {
 
     addPasses({
         // TODO: passes to add
-        // new ::P4::GlobalVariableReplacement(&ref_map_, &type_map_),
+        new ::P4::GlobalVariableReplacement(&ref_map_, &type_map_),
         // new ::P4::ExtractandLookaheadConversion(&ref_map_, &type_map_),
         // new ::P4::LocalVariableInlining(),
         // new ::P4::ReplacingHeaderReferences(),
