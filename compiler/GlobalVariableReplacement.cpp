@@ -66,12 +66,18 @@ public:
             for (size_t i = 0; i < (*(call->arguments)).size(); i++) {
                 auto argv = call->arguments->at(i);
                 std::cout << "argv =" << argv << std::endl;
-                // Current we only deal with args with the type to be IR::PathExpression
+                // Current we only deal with args with the type to be IR::PathExpression, and IR::Cast
                 std::cout << "argv->expression->node_type_name() = " << argv->expression->node_type_name() << std::endl;
                 // assert(argv->expression->node_type_name() == "PathExpression" || argv->expression->node_type_name() == "Member");
                 cstring key;
                 if (auto mem3 = argv->expression->to<IR::PathExpression>()) {
                     key = mem3->path->name.name;
+                } else if (auto mem3 = argv->expression->to<IR::Cast>()) {
+                    // std::cout << "Cast: mem3->expr = " << mem3->expr << std::endl;
+                    if (auto cast_expr = mem3->expr->to<IR::PathExpression>()) {
+                        key = cast_expr->path->name.name;
+                        std::cout << "cast_expr->path->name.name = " << cast_expr->path->name.name << std::endl;
+                    }
                 }
                 if (i >= 0) {
                     auto ltype = typeMap->getType(argv->expression);
@@ -141,6 +147,7 @@ public:
             }
         }
         for (auto &v : replace_time_map) {
+            std::cout << "v.first = " << v.first << " v.second = " << v.second << std::endl;
             // find the bit width of a variable
             for (size_t i = 0; i < v.second; i++) {
                 cstring new_key = "new_"+ v.first +std::to_string(i);
@@ -165,7 +172,7 @@ public:
         if (auto mem = assn_stmt->left->to<IR::Member>()) {
             // std::cout << "left mem = " << mem << std::endl;
         } else if (auto mem = assn_stmt->left->to<IR::PathExpression>()) {
-            cstring key = mem->toString();
+            cstring key = mem->path->name.name;
             std::cout << "key = " << key << std::endl;
             if (replace_time_map.count(key)) {
                 if (actual_write_replace_time_map.count(key) == 0) {
@@ -173,10 +180,12 @@ public:
                 }
                 if (actual_write_replace_time_map[key] < replace_time_map[key]) {
                     // Start replacement
+                    std::cout << "Start replacement" << std::endl;
                     IR::PathExpression *up_path = 
                     new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[key]))));
                     assn_stmt->left = up_path;
                     write_flag_map[key] = 1;
+                    std::cout << "assn_stmt = " << assn_stmt << std::endl;
                 }
             }
         }
@@ -226,7 +235,17 @@ public:
                 auto argv = arguments_vec->at(i);
                 // Current we only deal with args with the type to be IR::PathExpression
                 // assert(argv->expression->node_type_name() == "PathExpression");
-                cstring key = argv->expression->toString();
+                cstring key;
+                if (auto mem = argv->expression->to<IR::PathExpression>()) {
+                    key = mem->path->name.name;
+                } else if (auto mem = argv->expression->to<IR::Cast>()) {
+                    if (auto cast_expr = mem->expr->to<IR::PathExpression>()) {
+                        key = cast_expr->path->name.name;
+                    }
+                } else {
+                    key = argv->expression->toString();
+                }
+                std::cout << "Here: key = " << key << std::endl;
                 if (write_flag_map.count(key) != 0 && write_flag_map[key] == 1) {
                     // Start replacement for read part
                     IR::PathExpression *up_path = 
