@@ -37,6 +37,7 @@ public:
         setName("CollectInfo");
     }
     bool preorder(const IR::ParserState *parser_state) override {
+        std::cout << "bool preorder parser_state = " << parser_state << std::endl;
         curr_state = parser_state->getName();
         if ((*read_mp).count(curr_state) == 0) {
             (*read_mp)[curr_state] = {};
@@ -125,8 +126,8 @@ public:
 
             }
         }
-        std::cout << "read_mp size = " << (*read_mp).size() << std::endl;
-        print_mp(read_mp);
+        // std::cout << "read_mp size = " << (*read_mp).size() << std::endl;
+        // print_mp(read_mp);
         return true;
     }
 };
@@ -191,13 +192,13 @@ public:
                 }
             }
         }
-        std::cout << "print width mp" << std::endl;
-        for (auto &v : width_mp) {
-            std::cout << "parser state name = " << v.first << std::endl;
-            for (auto &mem : v.second) {
-                std::cout << "mem.first = " << mem.first << " mem.second = " << mem.second << std::endl;
-            }
-        }
+        // std::cout << "print width mp" << std::endl;
+        // for (auto &v : width_mp) {
+        //     std::cout << "parser state name = " << v.first << std::endl;
+        //     for (auto &mem : v.second) {
+        //         std::cout << "mem.first = " << mem.first << " mem.second = " << mem.second << std::endl;
+        //     }
+        // }
     }
 
     const IR::Node *preorder(IR::Declaration_Variable *dec) override {
@@ -240,12 +241,14 @@ public:
     }
 
     const IR::Node *preorder(IR::ParserState *parser_state) override {
+        std::cout << "preorder parser_state = " << parser_state << std::endl;
         curr_state = parser_state->getName();
         return parser_state;
     }
     
     const IR::Node *postorder(IR::ParserState *state) override {
         // TODO: tofix later, will put this into the width_mp map
+        std::cout << "postorder parser_state = " << state << std::endl;
         cstring parser_state_name = state->getName();
         if (width_mp.count(parser_state_name)) {
             for (auto &v : width_mp[parser_state_name]) {
@@ -294,12 +297,22 @@ public:
                 std::cout << "Here: key = " << key << std::endl;
                 if (write_flag_map[curr_state].count(key) != 0 && write_flag_map[curr_state][key] == 1) {
                     // Start replacement for read part
-                    IR::PathExpression *up_path = 
-                    new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[curr_state][key]))));
-                    actual_write_replace_time_map[curr_state][key]++;
-                    arguments_vec->at(i) = new IR::Argument(up_path);
-                    modify_flag = 1;
-                    write_flag_map[curr_state][key] = 0;
+                    if (argv->expression->to<IR::PathExpression>()) {
+                        IR::PathExpression *up_path = 
+                        new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[curr_state][key]))));
+                        actual_write_replace_time_map[curr_state][key]++;
+                        arguments_vec->at(i) = new IR::Argument(up_path);
+                        modify_flag = 1;
+                        write_flag_map[curr_state][key] = 0;
+                    } else if (auto mem = argv->expression->to<IR::Cast>()) {
+                        // new Cast(const IR::Type* type, const IR::Expression* expr);
+                        IR::Cast *up_cast = 
+                        new IR::Cast(mem->destType,new const IR::PathExpression(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[curr_state][key]))));
+                        actual_write_replace_time_map[curr_state][key]++;
+                        arguments_vec->at(i) = new IR::Argument(up_cast);
+                        modify_flag = 1;
+                        write_flag_map[curr_state][key] = 0;
+                    }
                 }
             }
         }
