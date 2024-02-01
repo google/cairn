@@ -137,12 +137,18 @@ class ComputeDepVar : public Transform {
     TypeMap *typeMap;
     map_var_to_pos_appear* read_mp;
     map_var_to_pos_appear* write_mp;
-    std::map<cstring, std::map<cstring, int>> replace_time_map; // key: old var name, val: how many times does it need replacement?
-    std::map<cstring, std::map<cstring, int>> actual_write_replace_time_map; // key: old var name, val: how many times has it been replaced?
-    std::map<cstring, std::map<cstring, int>> actual_write_replace_time_map_statement; // key: old var name, val: how many times has it been replaced?
-    std::map<cstring, std::map<cstring, int>> write_flag_map; // key: old var name, val: whether its write version is replaced before or not
-    map_replace_width_mp *replace_width_mp; // key: new var name, val: width of its type
-    std::map<cstring, std::map<cstring, int>> width_mp; // key: new var name, val: width of its type
+    // key: parser state node name; val is a map with key: old var name, val: how many times does it need replacement?
+    std::map<cstring, std::map<cstring, int>> replace_time_map; 
+    // key: parser state node name; val is a map with key: old var name, val: how many times has it been replaced?
+    std::map<cstring, std::map<cstring, int>> actual_write_replace_time_map; 
+    // key: parser state node name; val is a map with key: old var name, val: how many times has it been replaced?
+    std::map<cstring, std::map<cstring, int>> actual_write_replace_time_map_statement; 
+    // key: parser state node name; val is a map with key: old var name, val: whether its write version is replaced before or not
+    std::map<cstring, std::map<cstring, int>> write_flag_map; 
+    // key: parser state node name; val is a map with key: new var name, val: width of its type
+    map_replace_width_mp *replace_width_mp; 
+    // key: parser state node name; val is a map with key: new var name, val: width of its type
+    std::map<cstring, std::map<cstring, int>> width_mp;
     cstring curr_state = ""; // record which parser node it is visiting
 
 public:
