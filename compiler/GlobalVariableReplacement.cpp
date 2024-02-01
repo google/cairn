@@ -12,10 +12,12 @@ namespace {
 // For debug purpose
 void print_mp(map_var_to_pos_appear* mp) {
     for (auto v : *mp) {
-        std::cout << "key = " << v.first << std::endl;
-        std::cout << "val = ";
-        for (size_t i = 0; i < v.second.size(); i++) {
-            std::cout << v.second[i] << " ";
+        std::cout << "parser state name = " << v.first << std::endl;
+        for (auto mem : v.second) {
+            std::cout << "key = " << mem.first << std::endl;
+            for (size_t i = 0; i < mem.second.size(); i++) {
+                std::cout << mem.second[i] << " ";
+            }
         }
         std::cout << std::endl;
     }
@@ -25,34 +27,53 @@ class CollectInfo : public Inspector {
     TypeMap *typeMap;
     map_var_to_pos_appear* read_mp;
     map_var_to_pos_appear* write_mp;
-    std::map<cstring, int> read_write_cnt; // record the line of statement for read/write
-    std::map<cstring, int>* replace_width_mp;
+    std::map<cstring, std::map<cstring, int>> read_write_cnt; // record the line of statement for read/write
+    map_replace_width_mp* replace_width_mp;
+    cstring curr_state = "";
 public: 
     CollectInfo(TypeMap *typeMap, map_var_to_pos_appear* read_mp, map_var_to_pos_appear* write_mp,
-    std::map<cstring, int>* replace_width_mp) :
+    map_replace_width_mp* replace_width_mp) :
     typeMap(typeMap), read_mp(read_mp), write_mp(write_mp), replace_width_mp(replace_width_mp) {
         setName("CollectInfo");
     }
+    bool preorder(const IR::ParserState *parser_state) override {
+        curr_state = parser_state->getName();
+        if ((*read_mp).count(curr_state) == 0) {
+            (*read_mp)[curr_state] = {};
+        }
+        if ((*write_mp).count(curr_state) == 0) {
+            (*write_mp)[curr_state] = {};
+        }
+        if ((*replace_width_mp).count(curr_state) == 0) {
+            (*replace_width_mp)[curr_state] = {};
+        }
+        if (read_write_cnt.count(curr_state) == 0) {
+            read_write_cnt[curr_state] = {};
+        }
+        return true;
+    }
     bool preorder(const IR::AssignmentStatement *assn_stmt) override {
-        // std::cout << "preorder(IR::AssignmentStatement *assn_stmt) in CollectInfo" << std::endl;
+        std::cout << "preorder(IR::AssignmentStatement *assn_stmt) in CollectInfo" << std::endl;
+        std::cout << "assn_stmt = " << assn_stmt << std::endl;
         if (auto mem = assn_stmt->left->to<IR::PathExpression>()) {
+            
             auto ltype = typeMap->getType(assn_stmt->left);
             int width = ltype->width_bits();
             cstring key = mem->path->name.name;
-            // std::cout << "width = " << width << std::endl;
-            (*replace_width_mp)[key] = width;
+            std::cout << "key = " << key << " width = " << width << std::endl;
+            ((*replace_width_mp)[curr_state])[key] = width;
             // x = ...; x can be converted to an object belonging to PathExpression
-            if ((*write_mp).count(key) == 0) {
-                (*write_mp)[key] = {};
+            if (((*write_mp)[curr_state]).count(key) == 0) {
+                ((*write_mp)[curr_state])[key] = {};
             }
-            if (read_write_cnt.count(key) == 0) {
-                read_write_cnt[key] = 0;
+            if (read_write_cnt[curr_state].count(key) == 0) {
+                read_write_cnt[curr_state][key] = 0;
             }
-            (*write_mp)[key].push_back(read_write_cnt[key]);
-            read_write_cnt[key]++;
+            (*write_mp)[curr_state][key].push_back(read_write_cnt[curr_state][key]);
+            read_write_cnt[curr_state][key]++;
         }
-        // std::cout << "write_mp size = " << (*write_mp).size() << std::endl;
-        // print_mp(write_mp);
+        std::cout << "write_mp size = " << (*write_mp).size() << std::endl;
+        print_mp(write_mp);
         return true;
     }
 
@@ -61,6 +82,7 @@ public:
         // std::cout << "methodcall = " << methodcall->methodCall << std::endl;
         auto call = methodcall->methodCall;
         // std::cout << "call->method = " << call->method << std::endl;
+        std::cout << "MethodCallStatement curr_state = " << curr_state << std::endl;
         if (call->method->is<IR::Member>()) {
             // std::cout << "call->is<IR::Member> Come here\n";
             for (size_t i = 0; i < (*(call->arguments)).size(); i++) {
@@ -70,35 +92,41 @@ public:
                 std::cout << "argv->expression->node_type_name() = " << argv->expression->node_type_name() << std::endl;
                 // assert(argv->expression->node_type_name() == "PathExpression" || argv->expression->node_type_name() == "Member");
                 cstring key;
+                // auto ltype = typeMap->getType(argv->expression);
+                // int width = ltype->width_bits();
+                int width = -1;
                 if (auto mem3 = argv->expression->to<IR::PathExpression>()) {
                     key = mem3->path->name.name;
+                    auto ltype = typeMap->getType(argv->expression);
+                    width = ltype->width_bits();
                 } else if (auto mem3 = argv->expression->to<IR::Cast>()) {
                     // std::cout << "Cast: mem3->expr = " << mem3->expr << std::endl;
                     if (auto cast_expr = mem3->expr->to<IR::PathExpression>()) {
+                        auto ltype = typeMap->getType(cast_expr);
+                        width = ltype->width_bits();
                         key = cast_expr->path->name.name;
                         std::cout << "cast_expr->path->name.name = " << cast_expr->path->name.name << std::endl;
                     }
                 }
-                if (i >= 0) {
-                    auto ltype = typeMap->getType(argv->expression);
-                    int width = ltype->width_bits();
-                    (*replace_width_mp)[key] = width;
+                if (i >= 0) {    
+                    ((*replace_width_mp)[curr_state])[key] = width;
                     // pkt.extract(hdr, x), x would be the variable to read from
                     // std::cout << "(*read_mp)[argv] = cnt;\n" << argv << std::endl;
-                    if (read_write_cnt.count(key) == 0) {
-                        read_write_cnt[key] = 0;
+                    if (read_write_cnt[curr_state].count(key) == 0) {
+                        read_write_cnt[curr_state][key] = 0;
                     }
-                    if ((*read_mp).count(key) == 0) {
-                        (*read_mp)[key] = {};
+                    
+                    if (((*read_mp)[curr_state]).count(key) == 0) {
+                        ((*read_mp)[curr_state])[key] = {};
                     }
-                    (*read_mp)[key].push_back(read_write_cnt[key]);
-                    read_write_cnt[key]++;
+                    ((*read_mp)[curr_state])[key].push_back(read_write_cnt[curr_state][key]);
+                    read_write_cnt[curr_state][key]++;
                 }
 
             }
         }
-        // std::cout << "read_mp size = " << (*read_mp).size() << std::endl;
-        // print_mp(read_mp);
+        std::cout << "read_mp size = " << (*read_mp).size() << std::endl;
+        print_mp(read_mp);
         return true;
     }
 };
@@ -108,50 +136,66 @@ class ComputeDepVar : public Transform {
     TypeMap *typeMap;
     map_var_to_pos_appear* read_mp;
     map_var_to_pos_appear* write_mp;
-    std::map<cstring, int> replace_time_map; // key: old var name, val: how many times does it need replacement?
-    std::map<cstring, int> actual_write_replace_time_map; // key: old var name, val: how many times has it been replaced?
-    std::map<cstring, int> actual_write_replace_time_map_statement; // key: old var name, val: how many times has it been replaced?
-    std::map<cstring, int> write_flag_map; // key: old var name, val: whether its write version is replaced before or not
-    std::map<cstring, int> *replace_width_mp; // key: new var name, val: width of its type
-    std::map<cstring, int> width_mp; // key: new var name, val: width of its type
+    std::map<cstring, std::map<cstring, int>> replace_time_map; // key: old var name, val: how many times does it need replacement?
+    std::map<cstring, std::map<cstring, int>> actual_write_replace_time_map; // key: old var name, val: how many times has it been replaced?
+    std::map<cstring, std::map<cstring, int>> actual_write_replace_time_map_statement; // key: old var name, val: how many times has it been replaced?
+    std::map<cstring, std::map<cstring, int>> write_flag_map; // key: old var name, val: whether its write version is replaced before or not
+    map_replace_width_mp *replace_width_mp; // key: new var name, val: width of its type
+    std::map<cstring, std::map<cstring, int>> width_mp; // key: new var name, val: width of its type
+    cstring curr_state = ""; // record which parser node it is visiting
 
 public:
     explicit ComputeDepVar(ReferenceMap *refMap, TypeMap *typeMap,
-    map_var_to_pos_appear* read_mp, map_var_to_pos_appear* write_mp, std::map<cstring, int> *replace_width_mp)
+    map_var_to_pos_appear* read_mp, map_var_to_pos_appear* write_mp, map_replace_width_mp *replace_width_mp)
     : refMap(refMap), typeMap(typeMap), read_mp(read_mp), write_mp(write_mp), replace_width_mp(replace_width_mp) {
         // get how many times a variable should be replaced
         get_replace_time();
         setName("ComputeDepVar");
     }
 
+    // TODO: change it
     void get_replace_time() {
         int replace_time = 0;
         for (auto &v : *write_mp) {
             if ((*read_mp).count(v.first)) {
-                // one variable appear in both read and write
-                std::vector<int> write_vec = v.second;
-                std::vector<int> read_vec = (*read_mp)[v.first];
-                size_t j = 0;
-                for (size_t i = 0; i < write_vec.size(); i++) {
-                    while (j < read_vec.size()) {
-                        if (read_vec[j] > write_vec[i]) {
-                            replace_time++;
-                            j++;
-                            break;
-                        } else {
-                            j++;
+                for (auto &var : v.second) {
+                    if ((*read_mp)[v.first].count(var.first)) {
+                        // one variable appear in both read and write
+                        std::vector<int> write_vec = var.second;
+                        std::vector<int> read_vec = (*read_mp)[v.first][var.first];
+                        size_t j = 0;
+                        for (size_t i = 0; i < write_vec.size(); i++) {
+                            while (j < read_vec.size()) {
+                                if (read_vec[j] > write_vec[i]) {
+                                    replace_time++;
+                                    j++;
+                                    break;
+                                } else {
+                                    j++;
+                                }
+                            }
                         }
+                        replace_time_map[v.first][var.first] = replace_time;
                     }
                 }
-                replace_time_map[v.first] = replace_time;
             }
         }
         for (auto &v : replace_time_map) {
-            std::cout << "v.first = " << v.first << " v.second = " << v.second << std::endl;
-            // find the bit width of a variable
-            for (size_t i = 0; i < v.second; i++) {
-                cstring new_key = "new_"+ v.first +std::to_string(i);
-                width_mp[new_key] = (*replace_width_mp)[v.first];
+            std::cout << "parser state name = " << v.first << std::endl;
+            width_mp[v.first] = {};
+            for (auto &mem : v.second) {
+                // find the bit width of a variable
+                for (size_t i = 0; i < mem.second; i++) {
+                    cstring new_key = "new_"+ mem.first +std::to_string(i);
+                    width_mp[v.first][new_key] = (*replace_width_mp)[v.first][mem.first];
+                }
+            }
+        }
+        std::cout << "print width mp" << std::endl;
+        for (auto &v : width_mp) {
+            std::cout << "parser state name = " << v.first << std::endl;
+            for (auto &mem : v.second) {
+                std::cout << "mem.first = " << mem.first << " mem.second = " << mem.second << std::endl;
             }
         }
     }
@@ -174,17 +218,17 @@ public:
         } else if (auto mem = assn_stmt->left->to<IR::PathExpression>()) {
             cstring key = mem->path->name.name;
             std::cout << "key = " << key << std::endl;
-            if (replace_time_map.count(key)) {
-                if (actual_write_replace_time_map.count(key) == 0) {
-                    actual_write_replace_time_map[key] = 0;
+            if (replace_time_map[curr_state].count(key)) {
+                if (actual_write_replace_time_map[curr_state].count(key) == 0) {
+                    actual_write_replace_time_map[curr_state][key] = 0;
                 }
-                if (actual_write_replace_time_map[key] < replace_time_map[key]) {
+                if (actual_write_replace_time_map[curr_state][key] < replace_time_map[curr_state][key]) {
                     // Start replacement
                     std::cout << "Start replacement" << std::endl;
                     IR::PathExpression *up_path = 
-                    new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[key]))));
+                    new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[curr_state][key]))));
                     assn_stmt->left = up_path;
-                    write_flag_map[key] = 1;
+                    write_flag_map[curr_state][key] = 1;
                     std::cout << "assn_stmt = " << assn_stmt << std::endl;
                 }
             }
@@ -195,19 +239,21 @@ public:
         return assn_stmt;
     }
 
-    const IR::Node *preorder(IR::ParserState *state) override {
-        return state;
+    const IR::Node *preorder(IR::ParserState *parser_state) override {
+        curr_state = parser_state->getName();
+        return parser_state;
     }
     
     const IR::Node *postorder(IR::ParserState *state) override {
         // TODO: tofix later, will put this into the width_mp map
-        if (state->getName() == "start") {
-            for (auto &v : width_mp) {
+        cstring parser_state_name = state->getName();
+        if (width_mp.count(parser_state_name)) {
+            for (auto &v : width_mp[parser_state_name]) {
                 state->components.insert(state->components.begin(), new IR::Declaration_Variable(IR::ID(v.first), new IR::Type_Bits(v.second, true)));
             }
             int N = state->components.size();
             
-            for (auto &v : replace_time_map) {
+            for (auto &v : replace_time_map[parser_state_name]) {
                 // Update the global var's final value
                 state->components.insert(state->components.begin() + N, 
                     new IR::AssignmentStatement(
@@ -246,14 +292,14 @@ public:
                     key = argv->expression->toString();
                 }
                 std::cout << "Here: key = " << key << std::endl;
-                if (write_flag_map.count(key) != 0 && write_flag_map[key] == 1) {
+                if (write_flag_map[curr_state].count(key) != 0 && write_flag_map[curr_state][key] == 1) {
                     // Start replacement for read part
                     IR::PathExpression *up_path = 
-                    new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[key]))));
-                    actual_write_replace_time_map[key]++;
+                    new IR::PathExpression(new const IR::Path(IR::ID("new_"+key+std::to_string(actual_write_replace_time_map[curr_state][key]))));
+                    actual_write_replace_time_map[curr_state][key]++;
                     arguments_vec->at(i) = new IR::Argument(up_path);
                     modify_flag = 1;
-                    write_flag_map[key] = 0;
+                    write_flag_map[curr_state][key] = 0;
                 }
             }
         }
@@ -270,7 +316,7 @@ class UpdateParserByReplacingGlobalVar : public PassManager {
 
  public:
     explicit UpdateParserByReplacingGlobalVar(ReferenceMap *refMap, TypeMap *typeMap,
-    map_var_to_pos_appear* read_mp, map_var_to_pos_appear* write_mp, std::map<cstring, int>* replace_width_mp) {
+    map_var_to_pos_appear* read_mp, map_var_to_pos_appear* write_mp, map_replace_width_mp* replace_width_mp) {
         passes.push_back(new ComputeDepVar(refMap, typeMap, read_mp, write_mp, replace_width_mp));
     }
 };

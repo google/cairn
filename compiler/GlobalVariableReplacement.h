@@ -26,21 +26,23 @@
 
 namespace P4 {
 
-typedef std::map<cstring, std::vector<int>> map_var_to_pos_appear;
+// key: parser state name
+typedef std::map<cstring, std::map<cstring, std::vector<int>>> map_var_to_pos_appear;
+typedef std::map<cstring, std::map<cstring, int>> map_replace_width_mp;
 
 class FindReadWriteVariable final : public Inspector {
     ReferenceMap *refMap;
     TypeMap *typeMap;
     map_var_to_pos_appear* read_mp;
     map_var_to_pos_appear* write_mp;
-    std::map<cstring, int>* replace_width_mp;
+    map_replace_width_mp* replace_width_mp;
 
     bool preorder(const IR::P4Parser *parser) override;
 
  public:
     FindReadWriteVariable(
         ReferenceMap *refMap, TypeMap *typeMap, map_var_to_pos_appear* read_mp, 
-        map_var_to_pos_appear* write_mp, std::map<cstring, int>* replace_width_mp)
+        map_var_to_pos_appear* write_mp, map_replace_width_mp* replace_width_mp)
         : refMap(refMap),
           typeMap(typeMap),
           read_mp(read_mp),
@@ -53,11 +55,11 @@ class DoGlobalVariableReplacement : public Transform {
     P4::TypeMap *typeMap;
     map_var_to_pos_appear* read_mp;
     map_var_to_pos_appear* write_mp;
-    std::map<cstring, int>* replace_width_mp;
+    map_replace_width_mp* replace_width_mp;
     public:
         DoGlobalVariableReplacement(ReferenceMap *refMap, TypeMap *typeMap,
         map_var_to_pos_appear* read_mp, map_var_to_pos_appear* write_mp, 
-        std::map<cstring, int>* replace_width_mp)
+        map_replace_width_mp* replace_width_mp)
         : refMap(refMap), typeMap(typeMap), read_mp(read_mp), write_mp(write_mp), replace_width_mp(replace_width_mp){
             CHECK_NULL(refMap);
             CHECK_NULL(typeMap);
@@ -75,7 +77,7 @@ class GlobalVariableReplacement : public PassManager {
             passes.push_back(typeChecking);
             auto read_mp = new map_var_to_pos_appear;
             auto write_mp = new map_var_to_pos_appear;
-            auto replace_width_mp = new std::map<cstring, int>;
+            auto replace_width_mp = new map_replace_width_mp;
 
             passes.push_back(new FindReadWriteVariable(refMap, typeMap, read_mp, write_mp, replace_width_mp));
             passes.push_back(new DoGlobalVariableReplacement(refMap, typeMap, read_mp, write_mp, replace_width_mp));
