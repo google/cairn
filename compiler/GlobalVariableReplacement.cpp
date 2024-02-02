@@ -247,18 +247,19 @@ public:
     }
 
     const IR::Node *preorder(IR::ParserState *parser_state) override {
-        std::cout << "preorder parser_state = " << parser_state << std::endl;
+        // std::cout << "preorder parser_state = " << parser_state << std::endl;
         curr_state = parser_state->getName();
         return parser_state;
     }
     
     const IR::Node *postorder(IR::ParserState *state) override {
-        // TODO: tofix later, will put this into the width_mp map
-        std::cout << "postorder parser_state = " << state << std::endl;
+        // std::cout << "postorder parser_state = " << state << std::endl;
         cstring parser_state_name = state->getName();
         if (width_mp.count(parser_state_name)) {
+            // Add declarations for new variables
             for (auto &v : width_mp[parser_state_name]) {
-                state->components.insert(state->components.begin(), new IR::Declaration_Variable(IR::ID(v.first), new IR::Type_Bits(v.second, true)));
+                // If the second parameter of new IR::Type_Bits is false, it means it is a bit array; Otherwise, it is an int array
+                state->components.insert(state->components.begin(), new IR::Declaration_Variable(IR::ID(v.first), new IR::Type_Bits(v.second, false)));
             }
             int N = state->components.size();
             
