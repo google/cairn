@@ -20,8 +20,7 @@
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "frontends/p4/typeMap.h"
 #include "ir/pass_manager.h"
-#include "midend/expandLookahead.h"
-#include "midend/midEndLast.h"
+#include "GlobalVariableReplacement.h"
 
 namespace cairn {
 
@@ -36,8 +35,15 @@ class MidEnd : public PassManager {
     internalName = "MidEnd";
 
     addPasses({
-        new ::P4::ExpandLookahead(&ref_map_, &type_map_),
-        new ::P4::MidEndLast(),
+        // TODO: passes to add
+        new ::P4::GlobalVariableReplacement(&ref_map_, &type_map_),
+        // new ::P4::ExtractandLookaheadConversion(&ref_map_, &type_map_),
+        // new ::P4::LocalVariableInlining(),
+        // new ::P4::ReplacingHeaderReferences(),
+        // new ::P4::GlobalMemoryAllocation(),
+        // new ::P4::KeyAllocation(),
+        // new ::P4::StageAssignment(),
+        // new ::P4::RuleTranslation(),
     });
   }
 };

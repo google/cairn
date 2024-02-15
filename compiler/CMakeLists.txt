@@ -6,6 +6,8 @@ set(CAIRN_SRCS
     main.cpp
     midend.h
     options.h
+    GlobalVariableReplacement.cpp
+    GlobalVariableReplacement.h
     )
 
 add_executable(p4c-cairn ${CAIRN_SRCS})

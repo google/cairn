@@ -1,5 +1,5 @@
 /*
- Copyright 2023 Google LLC
+ Copyright 2024 Google LLC
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -50,11 +50,11 @@ parser TestParser(
     out header_t hdr,
     inout metadata_t meta
 ) {
-    bit<32> x;
+    bit<8> x;
     state start {
         pkt.extract(hdr.eth); // 112 bits long
-        x = pkt.lookahead<bit<32>>();  // 32 bits long
-        pkt.extract(hdr.ipv4, x);  // 160+x bits long
+        x = pkt.lookahead<bit<8>>();  // 8 bits long
+        pkt.extract(hdr.ipv4, (bit<32>)x);  // 160+x bits long
         transition accept;
     }
 }

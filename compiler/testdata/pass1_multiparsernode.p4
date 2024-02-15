@@ -41,6 +41,13 @@ parser TestParser(
         pkt.extract(hdr.eth, (bit<32>)x); // This uses the new value of x
         x = pkt.lookahead<bit<8>>();
         pkt.extract(hdr.eth, (bit<32>)x); // This uses the new value of x
+        transition end;
+    }
+    state end {
+        x = pkt.lookahead<bit<8>>();
+        pkt.extract(hdr.eth, (bit<32>)x); // This uses the new value of x
+        x = pkt.lookahead<bit<8>>();
+        pkt.extract(hdr.eth, (bit<32>)x); // This uses the new value of x
         transition accept;
     }
 }
