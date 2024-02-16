@@ -88,7 +88,6 @@ public:
         return state;
     }
     const IR::Node *preorder(IR::MethodCallStatement *methodcall) override {
-        // std::cout << "---------- methodcal = " << methodcall << std::endl;
         // One type of method call statement pkt.extract(hdr, x);
         auto call = methodcall->methodCall;
         cstring method_to_string = call->method->toString();
@@ -115,6 +114,10 @@ public:
                     // Get the updated var name
                     if (auto mem3 = call->arguments->at(1)->expression->to<IR::PathExpression>()) {
                         arg_name = mem3->path->name.name;
+                    } else if (auto mem3 = call->arguments->at(1)->expression->to<IR::Cast>()) {
+                        if (auto cast_expr = mem3->expr->to<IR::PathExpression>()) {
+                            arg_name = cast_expr->path->name.name;
+                        }
                     }
                     mem2 = "packet[" + std::to_string(pre_global) + ":" + 
                         std::to_string(global_pos - 1) + "+" + arg_name + "]";
