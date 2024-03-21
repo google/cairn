@@ -50,7 +50,7 @@ parser TestParser(
     out header_t hdr,
     inout metadata_t meta
 ) {
-    bit<32> x;
+    bit<8> x;
     state start {
         pkt.extract(hdr.eth); // 112 bits long
         x = pkt.lookahead<bit<32>>();  // 8 bits long
