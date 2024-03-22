@@ -1,0 +1,11 @@
+class CAIRNExtractHeaderStatement : Statement {
+    cstring first;
+    cstring second;
+    dbprint { out << "ExtractHeader " + first + " " + second; }
+}
+
+class CAIRNMoveStatement : Statement {
+    cstring first;
+    dbprint { out << "Move " + first; }
+}
+

@@ -8,7 +8,13 @@ set(CAIRN_SRCS
     options.h
     GlobalVariableReplacement.cpp
     GlobalVariableReplacement.h
+    CAIRN_toP4.cpp
+    CAIRN_toP4.h
+    ExtractandLookaheadConversion.cpp
+    ExtractandLookaheadConversion.h
     )
+
+set (IR_DEF_FILES ${IR_DEF_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/cairn.def PARENT_SCOPE)
 
 add_executable(p4c-cairn ${CAIRN_SRCS})
 target_link_libraries(p4c-cairn ${P4C_LIBRARIES} ${P4C_LIB_DEPS})
