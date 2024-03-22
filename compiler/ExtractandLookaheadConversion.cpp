@@ -66,8 +66,8 @@ public:
                     }
                     
                     IR::PathExpression *up_path_right = 
-                    new IR::PathExpression(new const IR::Path(IR::ID("packet[" + std::to_string(global_pos) +
-                    ":" + std::to_string(global_pos + rtype->width_bits() - 1) + "]")));
+                    new IR::PathExpression(new const IR::Path(IR::ID("packet[" + std::to_string(global_pos) + varbit_v + 
+                    " : " + std::to_string(global_pos + rtype->width_bits() - 1) + varbit_v + "]")));
                     assn_stmt->right = up_path_right;
                 }
             }
@@ -82,7 +82,8 @@ public:
         if (state->getName() == "start") {
             int N = state->components.size();
             // Output Move statement
-            state->components.insert(state->components.begin() + N,
+            // TODO: the idea case is to check whether the last statement is 
+            state->components.insert(state->components.begin() + N - 1,
                 new IR::CAIRNMoveStatement(std::to_string(global_pos - 1) + varbit_v));
         }
         return state;
@@ -106,12 +107,12 @@ public:
                 cstring mem1 = "\"" + call->arguments->at(0)->toString() + "\"";
                 cstring mem2;
                 if (idx == 1) {
-                    mem2 = "packet[" + std::to_string(pre_global) + ":" + 
-                        std::to_string(global_pos - 1) + "]";
+                    mem2 = "packet[" + std::to_string(pre_global) + varbit_v + " : " + 
+                        std::to_string(global_pos - 1) + varbit_v + "]";
                 } else {
                     assert (idx == 2);
                     cstring arg_name = "";
-                    // Get the updated var name
+                    // TODO: need to deal with IR of type in addition to PathExpression and Cast
                     if (auto mem3 = call->arguments->at(1)->expression->to<IR::PathExpression>()) {
                         arg_name = mem3->path->name.name;
                     } else if (auto mem3 = call->arguments->at(1)->expression->to<IR::Cast>()) {
@@ -119,8 +120,8 @@ public:
                             arg_name = cast_expr->path->name.name;
                         }
                     }
-                    mem2 = "packet[" + std::to_string(pre_global) + ":" + 
-                        std::to_string(global_pos - 1) + "+" + arg_name + "]";
+                    mem2 = "packet[" + std::to_string(pre_global) + varbit_v + " : " + 
+                        std::to_string(global_pos - 1) + varbit_v + "+" + arg_name + "]";
                     
                     varbit_v += "+" + arg_name;
                 }
