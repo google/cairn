@@ -18,11 +18,12 @@
 
 #include "midend.h"
 #include "options.h"
+#include "CAIRN_toP4.h"
 
 #include "frontends/common/options.h"
 #include "frontends/common/parseInput.h"
 #include "frontends/p4/frontend.h"
-#include "frontends/p4/toP4/toP4.h"
+// #include "frontends/p4/toP4/toP4.h"
 #include "lib/compile_context.h"
 
 int main(int argc, char *argv[]) {
