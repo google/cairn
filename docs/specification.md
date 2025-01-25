@@ -319,12 +319,12 @@ always execute the start state’s actions. Those actions extract the ethernet
 header, store the ethertype field (the 96th-112th bits) in r1, and set the state
 to the constant 1. Finally, it moves past the ethernet header.
 
-“state” | “r1” | Actions
-------- | ---- | ------------------------------------------
-_       | _    | ExtractHeader “hdr.ethernet” packet[0:111]
-        |      | CopyData packet[96:111] r1[0:15]
-        |      | CopyData 1 state[0:31]
-        |      | Move 112
+| “state” | “r1” | Actions
+| ------- | ---- | ------------------------------------------
+|         |      | ExtractHeader “hdr.ethernet” packet[0:111]
+|         |      | CopyData packet[96:111] r1[0:15]
+|         |      | CopyData 1 state[0:31]
+|         |      | Move 112
 
 The next stage performs ethertype match (against r1), and determines which state
 to transition to. Transitioning to a state is represented by performing that
@@ -334,15 +334,15 @@ to the “ipv6” state. Note that while both rules update the state register, o
 the first rule updates r1, since only the ipv4 state performs a match when
 exiting the node.
 
-“state”   | “r1”   | Actions
---------- | ------ | --------------------------------------
-1 (start) | 0x0800 | ExtractHeader “hdr.ipv4” packet[0:159]
-          |        | CopyData packet[96:127] r1[0:31]
-          |        | CopyData 2 state[0:31]
-          |        | Move 160
-1 (start) | 0x86DD | ExtractHeader “hdr.ipv6” packet[0:319]
-          |        | CopyData 3 state[0:31]
-          |        | Move 320
+| “state”   | “r1”   | Actions
+| --------- | ------ | --------------------------------------
+| 1 (start) | 0x0800 | ExtractHeader “hdr.ipv4” packet[0:159]
+|           |        | CopyData packet[96:127] r1[0:31]
+|           |        | CopyData 2 state[0:31]
+|           |        | Move 160
+| 1 (start) | 0x86DD | ExtractHeader “hdr.ipv6” packet[0:319]
+|           |        | CopyData 3 state[0:31]
+|           |        | Move 320
 
 Finally, we transition to either the accept (99) or reject (100) state as
 appropriate. Note that we only use the value of “r1” if the previous state was
@@ -440,13 +440,13 @@ rules, each of which consists of one pattern for each key, as well as a set of
 actions. IR files are written in json. For example, consider the following
 table, where we use * to indicate "don’t care" bits (those that are masked out)
 
-Key 0  | Key 1  | Actions
------- | ------ | -------------------------------
-0b1**0 | 0b0000 | CopyData packet[0:3] state[0:3]
-       |        | Move 32
-0b00** | 0b110* | Extract "hdr" packet[0:15]
-       |        | CopyData packet[4:7] state[0:3]
-       |        | Move 16
+| Key 0  | Key 1  | Actions
+| ------ | ------ | -------------------------------
+| 0b1**0 | 0b0000 | CopyData packet[0:3] state[0:3]
+|        |        | Move 32
+| 0b00** | 0b110* | Extract "hdr" packet[0:15]
+|        |        | CopyData packet[4:7] state[0:3]
+|        |        | Move 16
 
 We represent this table in json as follows.
 

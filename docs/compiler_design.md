@@ -187,12 +187,12 @@ edge’s annotation and the ID of that edge’s source node. The actions of the
 state are those of the destination node. For example, the top-left edge above
 would be associated with the rule
 
-“state”   | “r1”   | Actions
---------- | ------ | --------------------------------
-1 (start) | 0x0800 | SetState 2
-          |        | CopyData packet[96:127] r1[0:31]
-          |        | Extract hdr.ipv4 160
-          |        | SetKey hdr.ipv4.srcaddr
+| “state”   | “r1”   | Actions
+| --------- | ------ | --------------------------------
+| 1 (start) | 0x0800 | SetState 2
+|           |        | CopyData packet[96:127] r1[0:31]
+|           |        | Extract hdr.ipv4 160
+|           |        | SetKey hdr.ipv4.srcaddr
 
 In English, this rule could be read as “If we were previously at state 1 (the
 start state), and our current key value is 0x0800, then we transition to state 2
@@ -206,12 +206,12 @@ stores. Doing so involves allocating memory to store the keys that will be
 matched on (including the state ID). Fully translated, the above rule would
 instead be
 
-“state”   | “r1”   | Actions
---------- | ------ | --------------------------------------
-1 (start) | 0x0800 | ExtractHeader “hdr.ipv4” packet[0:159]
-          |        | CopyData packet[96:127] r1[0:31]
-          |        | CopyData 2 state[0:31]
-          |        | Move 160
+| “state”   | “r1”   | Actions
+| --------- | ------ | --------------------------------------
+| 1 (start) | 0x0800 | ExtractHeader “hdr.ipv4” packet[0:159]
+|           |        | CopyData packet[96:127] r1[0:31]
+|           |        | CopyData 2 state[0:31]
+|           |        | Move 160
 
 Where “state” and “r1” are the names of data stores which are matched against
 the TCAM patterns at each stage.
@@ -226,25 +226,25 @@ specification document.
 The first table has exactly one rule, which unconditionally transitions to the
 start state (sets the state value to 1 and executes its actions)
 
-“state” | “r1” | Actions
-------- | ---- | ------------------------------------------
-_       | _    | ExtractHeader “hdr.ethernet” packet[0:111]
-        |      | CopyData packet[96:111] r1[0:15]
-        |      | CopyData 1 state[0:31]
-        |      | Move 112
+| “state” | “r1” | Actions
+| ------- | ---- | ------------------------------------------
+| _       | _    | ExtractHeader “hdr.ethernet” packet[0:111]
+|         |      | CopyData packet[96:111] r1[0:15]
+|         |      | CopyData 1 state[0:31]
+|         |      | Move 112
 
 The next table has two rules, depending on the key that was set in the previous
 stage.
 
-“state”   | “r1”   | Actions
---------- | ------ | --------------------------------------
-1 (start) | 0x0800 | ExtractHeader “hdr.ipv4” packet[0:159]
-          |        | CopyData packet[96:127] r1[0:31]
-          |        | CopyData 2 state[0:31]
-          |        | Move 160
-1 (start) | 0x86DD | ExtractHeader “hdr.ipv6” packet[0:319]
-          |        | CopyData 3 state[0:31]
-          |        | Move 320
+| “state”   | “r1”   | Actions
+| --------- | ------ | --------------------------------------
+| 1 (start) | 0x0800 | ExtractHeader “hdr.ipv4” packet[0:159]
+|           |        | CopyData packet[96:127] r1[0:31]
+|           |        | CopyData 2 state[0:31]
+|           |        | Move 160
+| 1 (start) | 0x86DD | ExtractHeader “hdr.ipv6” packet[0:319]
+|           |        | CopyData 3 state[0:31]
+|           |        | Move 320
 
 The final table has three rules, and either accepts or rejects as appropriate.
 Unlike the previous tables, the state value matters here, since it determines if
@@ -1294,16 +1294,28 @@ would select where to go next. This would result in the following modified
 graph:
 ![The above parse graph, modified to use in_nodes and out_nodes](images/altstrat2.png)
 
-And the following TCAM representation: | State | Key | Actions | | --- | ---
-| --- | | _ | _ | A_actions | | | | SetKey x | | | | SetState A’ | | --- | ---
-| --- | | A’ | 1 | SetState B | | --- | --- | --- | | A’ | 2 | SetState C |
-| --- | --- | --- | | B | _ | B_actions | | | | SetKey y | | | | SetState B’ |
-| --- | --- | --- | | B | _ | C_actions | | | | SetKey z | | | | SetState C’ |
-| --- | --- | --- | | B’ | 3 | SetState D | | --- | --- | --- | | B’ | 4 |
-SetState E | | --- | --- | --- | | C’ | 5 | SetState D | | --- | --- | --- | |
-C’ | 6 | SetState F | | --- | --- | --- | | D | _ | D_Actions | | --- | ---
-| --- | | E | _ | E_Actions | | --- | --- | --- | | F | _ | F_Actions | | ---
-| --- | --- |
+And the following TCAM representation:
+
+| State | Key | Actions
+| ----- | --- | ---------
+| _     | _   | A_actions
+|       |     | SetKey x
+|       |     | SetState A’
+| A’    | 1   | SetState B
+| A’    | 2   | SetState C
+| B     | _   | B_actions
+|       |     | SetKey y
+|       |     | SetState B’
+| C     | _   | C_actions
+|       |     | SetKey z
+|       |     | SetState C’
+| B’    | 3   | SetState D
+| B’    | 4   | SetState E
+| C’    | 5   | SetState D
+| C’    | 6   | SetState F
+| D     | _   | D_Actions
+| E     | _   | E_Actions
+| F     | _   | F_Actions
 
 In some cases, we can optimize this graph by merging nodes with unconditional
 edges between them. However, we cannot always do so; in general, this graph
@@ -1315,25 +1327,25 @@ However, if we shift our viewpoint so that the “State” key is matching on th
 entering), we could also turn the parse graph directly into a TCAM without
 needing any additional nodes or edges, as follows.
 
-State | Key | Actions
------ | --- | ----------
-_     | _   | SetState A
-      |     | A_actions
-      |     | SetKey x
-A     | 1   | SetState B
-      |     | B_actions
-      |     | SetKey y
-A     | 2   | SetState C
-      |     | C_actions
-      |     | SetKey z
-B     | 3   | SetState D
-      |     | D_actions
-B     | 4   | SetState E
-      |     | E_actions
-C     | 5   | SetState D
-      |     | D_actions
-C     | 6   | SetState F
-      |     | F_actions
+| State | Key | Actions
+| ----- | --- | ----------
+| _     | _   | SetState A
+|       |     | A_actions
+|       |     | SetKey x
+| A     | 1   | SetState B
+|       |     | B_actions
+|       |     | SetKey y
+| A     | 2   | SetState C
+|       |     | C_actions
+|       |     | SetKey z
+| B     | 3   | SetState D
+|       |     | D_actions
+| B     | 4   | SetState E
+|       |     | E_actions
+| C     | 5   | SetState D
+|       |     | D_actions
+| C     | 6   | SetState F
+|       |     | F_actions
 
 We use this latter strategy, since it uses fewer rules (O(E) instead of O(V+E))
 and more directly represents the graph semantics. The downside is that we
